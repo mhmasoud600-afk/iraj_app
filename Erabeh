@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "اولین ارسال پروژه به گیت"
+git remote add origin https://github.com/sogand/erabeh.git
+git branch -M main
+git push -u origin main

@@ -1,0 +1,16 @@
+allprojects {
+    buildscript {
+        repositories {
+            // اضافه کردن مخزن ایرانی در بالاترین اولویت برای بیلداسکریپت تمام پلاگین‌ها
+            maven { url 'https://pub-azs.ir/api/mavens/' }
+            google()
+            mavenCentral()
+        }
+    }
+    repositories {
+        // اضافه کردن مخزن ایرانی در بالاترین اولویت برای وابستگی‌های تمام پلاگین‌ها
+        maven { url 'https://pub-azs.ir/api/mavens/' }
+        google()
+        mavenCentral()
+    }
+}

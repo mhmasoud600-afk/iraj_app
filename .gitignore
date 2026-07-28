@@ -1,0 +1,26 @@
+# فایل‌های موقت و بیلد
+.dart_tool/
+build/
+.pub-cache/
+.pub/
+.gradle/
+android/.gradle/
+android/build/
+ios/.gradle/
+ios/build/
+*.lock
+*.log
+.DS_Store
+*.iml
+.idea/
+.vscode/
+
+# فایل‌های APK و کلیدها
+*.apk
+*.idsig
+*.jks
+upload-keystore.jks
+my-release-key.jks
+
+# کل پوشه assets (فعلاً)
+assets/

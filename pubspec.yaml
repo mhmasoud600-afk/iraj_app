@@ -1,0 +1,167 @@
+name: Erabeh
+description: اپلیکیشن روستای ایراج با گالری تصاویر
+publish_to: 'none'
+
+version: 1.0.3+5  # ← تغییر به نسخه بالاتر
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.6.0
+  flutter_map: ^6.2.1
+  latlong2: ^0.9.1
+  webview_flutter: ^4.10.0
+  google_maps_flutter: ^2.14.0
+  geolocator: ^10.1.1 
+  url_launcher: ^6.3.2
+  photo_view: ^0.14.0
+  shamsi_date: ^1.1.1
+  intl: ^0.20.2
+  hijri: ^3.0.0
+  html: ^0.15.4
+  cupertino_icons: ^1.0.8
+  easy_localization: ^3.0.8
+  shared_preferences: ^2.5.4
+  audioplayers: ^5.2.1
+  wakelock_plus: ^1.4.0
+  syncfusion_flutter_pdfviewer: ^32.1.22
+  characters: ^1.2.0
+  map_launcher: ^4.4.2
+  path_provider: ^2.1.1
+  just_audio: ^0.9.36
+  shimmer: ^3.0.0
+  share_plus: ^10.1.4
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_native_splash: ^2.4.7
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/clergy/
+    - assets/images/jobs/
+    - assets/images/employees/
+    - assets/images/engineers/
+    - assets/images/dentists/
+    - assets/images/documents/
+    - assets/images/public_servants/
+    - assets/images/entertainments/
+    - assets/images/historical/ancient_hills/
+    - assets/images/historical/castle/
+    - assets/images/historical/castle_square/
+    - assets/images/historical/chale_hozo/
+    - assets/images/historical/chenmado_cave/
+    - assets/images/historical/cypress_tree/
+    - assets/images/historical/gabra_tomb/
+    - assets/images/historical/garden_alleys/
+    - assets/images/historical/hosseinieh/
+    - assets/images/historical/old_texture/
+    - assets/images/historical/sabat/
+    - assets/images/historical/tower/
+    - assets/images/memorial/
+    - assets/images/eghamatgah/pako/
+    - assets/images/eghamatgah/chelehkhone/
+    - assets/images/eghamatgah/jeyran/
+    - assets/images/eghamatgah/fahmideh/
+    - assets/images/eghamatgah/erabeh/
+    - assets/images/farms/
+    - assets/images/nurses/
+    - assets/images/doctors/
+    - assets/icons/
+    - assets/audios/
+    - assets/images/Handicrafts/
+    - assets/images/mosque/
+    - assets/images/poets/
+    - assets/games/
+    - assets/translations/
+    - assets/images/
+    - assets/gallery/
+    - assets/music/
+    - assets/gallery_data.json
+    - assets/prayers/
+    - assets/music/song1.ogg
+    - assets/music/song2.ogg
+    - assets/music/song3.ogg
+    - assets/music/song4.ogg
+    - assets/music/song5.ogg
+    - assets/music/song6.ogg
+    - assets/music/song7.ogg
+    - assets/music/song8.ogg
+    - assets/music/song9.ogg
+    - assets/music/song10.ogg
+    - assets/music/song11.ogg
+    - assets/music/song12.ogg
+    - assets/music/song13.ogg
+    - assets/data/teachers.json
+    - assets/data/zakerin.json
+    - assets/data/customs.json
+    - assets/images/teachers/
+    - assets/images/servants/
+    - assets/images/elites/
+    - assets/pdf/asli_manataqe_maskooni.pdf
+    - assets/pdf/naghshe_manategh_dasht.pdf
+    - assets/pdf/gorgahha.pdf
+    - assets/images/martyrs/ali_yeganeh.jpg
+    - assets/images/martyrs/koochali_masoud.jpg
+    - assets/images/martyrs/hooshang_masoud.jpg
+    - assets/images/martyrs/mohammadhossein_dana.jpg
+    - assets/images/martyrs/rahmat_zahd.jpg
+    - assets/images/martyrs/koochali_rafie.jpg
+    - assets/images/martyrs/abolfazl_masoud.jpg
+    - assets/images/martyrs/mohammadali_boniasadi.jpg
+    - assets/images/martyrs/mohsen_zaeri.jpg
+    - assets/data/martyrs.json
+    
+  fonts:
+    - family: Vazir
+      fonts:
+        - asset: assets/fonts/Vazir.ttf
+    - family: Shabnam
+      fonts:
+        - asset: assets/fonts/Shabnam.ttf
+    - family: IranSans
+      fonts:
+        - asset: assets/fonts/IranSans.ttf
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+        - asset: assets/fonts/Vazirmatn-Bold.ttf
+          weight: 700
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
+        - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
+          weight: 700
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+        - asset: assets/fonts/Amiri-Bold.ttf
+          weight: 700
+    - family: Nastaliq
+      fonts:
+        - asset: assets/fonts/IranNastaliq.ttf
+    - family: Uthmanic
+      fonts:
+        - asset: assets/fonts/uthmanic.ttf
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/images/iraj_logo.png
+  android: true
+  ios: true
+  fullscreen: true
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/iraj_logo1.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/iraj_logo1.png"
+  min_sdk_android: 21
