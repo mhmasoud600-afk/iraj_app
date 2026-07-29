@@ -1,0 +1,30 @@
+workflows:
+  default-workflow:
+    name: Build App
+    instance_type: macos
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    scripts:
+      - name: دانلود فایل‌های حجیم از Google Drive
+        script: |
+          echo "در حال دانلود فایل‌های صوتی و تصویری..."
+          # شناسه فایل شما در لینک زیر قرار داده شد
+          gdrive_link="https://drive.google.com/uc?export=download&id=1xDqY_3qDMngrkDVPZXagEs21UGD9DGSu"
+          
+          # دانلود فایل زیپ
+          curl -L -o assets.zip "$gdrive_link" 
+          
+          # ایجاد پوشه assets (اگر وجود نداشته باشد)
+          mkdir -p assets
+          
+          # باز کردن فایل زیپ در پوشه assets
+          unzip -o assets.zip -d assets/
+          
+          # حذف فایل زیپ پس از باز شدن
+          rm assets.zip
+          echo "دانلود و جایگذاری فایل‌ها با موفقیت انجام شد!"
+      - name: ساخت فلاتر (Flutter Build)
+        script: flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/**/*.apk
