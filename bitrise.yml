@@ -1,0 +1,43 @@
+format_version: "11"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: flutter
+
+workflows:
+  deploy:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@6: {}
+    - script@1:
+        title: دانلود فایل‌های assets از گوگل‌درایو
+        inputs:
+        - content: |
+            #!/bin/bash
+            echo "در حال دانلود فایل‌های صوتی و تصویری از گوگل‌درایو..."
+            gdrive_link="https://drive.google.com/uc?export=download&id=1xDqY_3qDMngrkDVPZXagEs21UGD9DGSu"
+            
+            # دانلود فایل زیپ
+            curl -L -o assets.zip "$gdrive_link"
+            
+            # ایجاد پوشه assets
+            mkdir -p assets
+            
+            # باز کردن فایل زیپ در پوشه assets
+            unzip -o assets.zip -d assets/
+            
+            # حذف فایل زیپ
+            rm assets.zip
+            echo "دانلود و جایگذاری فایل‌ها با موفقیت انجام شد!"
+    - flutter-installer@1:
+        inputs:
+        - flutter_version: latest
+    - flutter-build@0:
+        inputs:
+        - project_location: .
+        - platform: android
+        - build_type: release
+        - extra_options: --no-tree-shake-icons
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - deploy_paths: build/app/outputs/flutter-apk/app-release.apk
+        - is_enable_public_page: true
