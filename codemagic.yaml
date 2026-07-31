@@ -6,25 +6,32 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: نصب و دانلود فایل‌های assets از Google Drive
+      - name: نصب gdown و دانلود فایل‌های assets
         script: |
-          echo "در حال نصب ابزار gdown برای دانلود مطمئن‌تر..."
+          set -e  # توقف در صورت بروز خطا
+          echo "نصب gdown..."
           pip3 install gdown > /dev/null
-          echo "در حال دانلود فایل‌های صوتی و تصویری..."
-          gdown --id 1xDqY_3qDMngrkDVPZXagEs21UGD9DGSu -O assets.zip
+          echo "دانلود فایل‌های صوتی و تصویری با gdown..."
+          gdown 1xDqY_3qDMngrkDVPZXagEs21UGD9DGSu -O assets.zip
           mkdir -p assets
           unzip -o assets.zip -d assets/
           rm assets.zip
-          echo "دانلود و جایگذاری فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون نیاز به امضای اپل (روش تضمینی)
+          echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
+      - name: ساخت IPA بدون امضا
         script: |
-          echo "شروع ساخت با xcodebuild و غیرفعال کردن کامل امضا..."
+          set -e
+          echo "شروع ساخت با xcodebuild (غیرفعال‌سازی کامل امضا)..."
           cd ios
           xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
           cd ..
           mkdir -p Payload
+          # بررسی وجود فایل اپلیکیشن
+          if [ ! -d "build/ios/Release-iphoneos/Runner.app" ]; then
+            echo "خطا: فایل Runner.app ساخته نشده است!"
+            exit 1
+          fi
           cp -r build/ios/Release-iphoneos/Runner.app Payload/
           zip -r unsigned_app.ipa Payload/
-          echo "🎉 فایل unsigned_app.ipa بدون امضا با موفقیت ساخته شد!"
+          echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
     artifacts:
       - unsigned_app.ipa
