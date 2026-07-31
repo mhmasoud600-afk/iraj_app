@@ -6,18 +6,17 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: نصب gdown و دانلود فایل‌های assets
+      - name: دانلود فایل‌های assets از Dropbox
         script: |
-          set -e  # توقف در صورت بروز خطا
-          echo "نصب gdown..."
-          pip3 install gdown > /dev/null
-          echo "دانلود فایل‌های صوتی و تصویری با gdown..."
-          gdown 1xDqY_3qDMngrkDVPZXagEs21UGD9DGSu -O assets.zip
+          set -e
+          echo "در حال دانلود فایل‌های صوتی و تصویری از Dropbox..."
+          dropbox_link="https://www.dropbox.com/scl/fi/mix5b3cdh4bul32kwwrzl/assets.zip?rlkey=mf55v34gtlko6ioack03b6myy&st=8mb4g8ax&dl=1"
+          curl -L -o assets.zip "$dropbox_link"
           mkdir -p assets
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا
+      - name: ساخت IPA بدون امضا (روش تضمینی)
         script: |
           set -e
           echo "شروع ساخت با xcodebuild (غیرفعال‌سازی کامل امضا)..."
@@ -25,7 +24,6 @@ workflows:
           xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
           cd ..
           mkdir -p Payload
-          # بررسی وجود فایل اپلیکیشن
           if [ ! -d "build/ios/Release-iphoneos/Runner.app" ]; then
             echo "خطا: فایل Runner.app ساخته نشده است!"
             exit 1
