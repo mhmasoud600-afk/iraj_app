@@ -17,13 +17,13 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با استفاده از پروژه موقت)
+      - name: ساخت IPA بدون امضا (با اصلاح نسخه iOS در Podfile)
         script: |
           set -e
           echo "حذف پوشه ios قدیمی..."
           rm -rf ios
 
-          echo "ساخت پوشه ios تمیز از یک پروژه فلاتر موقت (بدون لمس pubspec.yaml اصلی)..."
+          echo "ساخت پوشه ios تمیز از پروژه موقت..."
           mkdir temp_project
           cd temp_project
           flutter create --template=app .
@@ -31,10 +31,18 @@ workflows:
           cp -R temp_project/ios .
           rm -rf temp_project
 
-          echo "نصب وابستگی‌ها بر اساس pubspec اصلی شما (که حاوی assets: است)..."
+          echo "اضافه کردن platform :ios, '14.0' به Podfile (رفع مشکل google_maps)..."
+          echo "platform :ios, '14.0'" >> ios/Podfile
+
+          echo "نصب وابستگی‌ها بر اساس pubspec اصلی..."
           flutter pub get
 
-          echo "حذف کامل تنظیمات امضای اپل از فایل پروژه..."
+          echo "اجرای pod install با نسخه iOS اصلاح‌شده..."
+          cd ios
+          pod install
+          cd ..
+
+          echo "پاکسازی تنظیمات امضای اپل..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
