@@ -16,7 +16,7 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (با اصلاح نهایی pubspec.yaml)
+      - name: ساخت IPA بدون امضا (رفع خطای Duplicate key در pubspec.yaml)
         script: |
           set -e
           echo "حذف پوشه ios قدیمی..."
@@ -25,9 +25,10 @@ workflows:
           echo "ساخت مجدد پوشه ios با تنظیمات استاندارد..."
           flutter create --template=app .
 
-          echo "اضافه کردن بخش assets به pubspec.yaml (حل مشکل بسته‌بندی فایل‌ها)..."
-          # با استفاده از echo، بخش flutter و assets را به انتهای فایل اضافه می‌کنیم
-          echo -e "\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/" >> pubspec.yaml
+          echo "اضافه کردن assets به بخش flutter موجود (بدون ایجاد تکراری)..."
+          # این دستور خط uses-material-design را پیدا کرده و assets را زیر آن اضافه می‌کند
+          awk '/uses-material-design: true/ { print; print "  assets:"; print "    - assets/"; next }1' pubspec.yaml > pubspec_new.yaml
+          mv pubspec_new.yaml pubspec.yaml
 
           echo "نصب وابستگی‌ها..."
           flutter pub get
