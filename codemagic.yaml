@@ -17,56 +17,47 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با xcodebuild و پاکسازی کامل xcconfig)
+      - name: ساخت IPA بدون امضا (با کپی pubspec به پروژه موقت)
         script: |
           set -e
-          echo "بک‌آپ گرفتن از فایل pubspec.yaml اصلی..."
-          cp pubspec.yaml pubspec.yaml.bak
-
-          echo "حذف پوشه ios قدیمی..."
-          rm -rf ios
-
-          echo "ساخت مجدد پوشه ios بر اساس pubspec.yaml فعلی..."
+          echo "ایجاد پروژه موقت برای تولید ios تمیز بر اساس pubspec اصلی..."
+          mkdir temp_project
+          # کپی کردن pubspec.yaml اصلی به پروژه موقت
+          cp pubspec.yaml temp_project/
+          cd temp_project
+          # اجرای flutter create در پروژه موقت (با pubspec اصلی)
           flutter create --template=app .
+          # پوشه ios اکنون با تنظیمات صحیح ساخته شده است
+          cd ..
+          # حذف پوشه ios قدیمی از پروژه اصلی
+          rm -rf ios
+          # کپی پوشه ios سالم از پروژه موقت به پروژه اصلی
+          cp -R temp_project/ios .
+          # حذف پروژه موقت
+          rm -rf temp_project
 
-          echo "بازگرداندن فایل pubspec.yaml اصلی (برای حفظ تنظیمات assets)..."
-          mv pubspec.yaml.bak pubspec.yaml
-
-          echo "نصب وابستگی‌ها بر اساس فایل pubspec اصلی..."
+          echo "نصب وابستگی‌ها بر اساس pubspec اصلی (که شامل assets است)..."
           flutter pub get
 
           echo "افزودن platform :ios, '14.0' به Podfile..."
           echo "platform :ios, '14.0'" >> ios/Podfile
 
-          echo "اجرای pod install بر اساس پلاگین‌های واقعی پروژه..."
+          echo "اجرای pod install..."
           cd ios
           pod install
           cd ..
 
-          echo "پاکسازی کامل فایل‌های xcconfig از هرگونه تنظیمات امضا..."
-          sed -i '' 's/CODE_SIGN_IDENTITY=.*//g' ios/Flutter/Release.xcconfig || true
-          sed -i '' 's/CODE_SIGN_STYLE=.*//g' ios/Flutter/Release.xcconfig || true
-          sed -i '' 's/CODE_SIGN_IDENTITY=.*//g' ios/Flutter/Debug.xcconfig || true
-          sed -i '' 's/CODE_SIGN_STYLE=.*//g' ios/Flutter/Debug.xcconfig || true
-
-          echo "پاکسازی نهایی تنظیمات امضای اپل از فایل پروژه Xcode..."
+          echo "پاکسازی تنظیمات امضای اپل..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "تنظیم مسیر دقیق فلاتر برای اجرای xcodebuild..."
-          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
-          export FLUTTER_ROOT
-
-          echo "شروع ساخت نهایی با xcodebuild (غیرفعال‌سازی ۱۰۰٪ امضا)..."
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-          cd ..
+          echo "شروع ساخت نهایی با Flutter build (غیرفعال‌سازی کامل امضا)..."
+          flutter build ios --release --no-codesign
 
           mkdir -p Payload
-          if [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
-            cp -r build/ios/Release-iphoneos/Runner.app Payload/
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cp -r build/ios/iphoneos/Runner.app Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
