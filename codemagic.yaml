@@ -17,51 +17,49 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با کپی pubspec به پروژه موقت)
+      - name: ساخت IPA بدون امضا (روش تضمینی و نهایی)
         script: |
           set -e
-          echo "ایجاد پروژه موقت برای تولید ios تمیز بر اساس pubspec اصلی..."
+          echo "ساخت پوشه ios تمیز از پروژه موقت..."
+          rm -rf ios
           mkdir temp_project
-          # کپی کردن pubspec.yaml اصلی به پروژه موقت
           cp pubspec.yaml temp_project/
           cd temp_project
-          # اجرای flutter create در پروژه موقت (با pubspec اصلی)
           flutter create --template=app .
-          # پوشه ios اکنون با تنظیمات صحیح ساخته شده است
           cd ..
-          # حذف پوشه ios قدیمی از پروژه اصلی
           rm -rf ios
-          # کپی پوشه ios سالم از پروژه موقت به پروژه اصلی
           cp -R temp_project/ios .
-          # حذف پروژه موقت
           rm -rf temp_project
 
-          echo "نصب وابستگی‌ها بر اساس pubspec اصلی (که شامل assets است)..."
+          echo "نصب وابستگی‌ها..."
           flutter pub get
-
-          echo "افزودن platform :ios, '14.0' به Podfile..."
           echo "platform :ios, '14.0'" >> ios/Podfile
-
-          echo "اجرای pod install..."
           cd ios
           pod install
           cd ..
 
-          echo "پاکسازی تنظیمات امضای اپل..."
+          echo "پاکسازی کامل تنظیمات امضای اپل..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "شروع ساخت نهایی با Flutter build (غیرفعال‌سازی کامل امضا)..."
-          flutter build ios --release --no-codesign
+          echo "شروع ساخت با xcodebuild (دور زدن کامل فلاتر)..."
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          cd ..
 
+          echo "تبدیل فایل کامپایل شده به IPA..."
           mkdir -p Payload
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            cp -r build/ios/iphoneos/Runner.app Payload/
+          APP_PATH="build/ios/Release-iphoneos/Runner.app"
+          if [ -d "$APP_PATH" ]; then
+            cp -r "$APP_PATH" Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
-            echo "خطا: فایل Runner.app ساخته نشد!"
+            echo "خطا: فایل Runner.app پیدا نشد!"
             exit 1
           fi
     artifacts:
