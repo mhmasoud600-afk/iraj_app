@@ -17,7 +17,7 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با افزودن پلتفرم 14.0 به Podfile)
+      - name: ساخت IPA بدون امضا (با xcodebuild و پاکسازی کامل xcconfig)
         script: |
           set -e
           echo "بک‌آپ گرفتن از فایل pubspec.yaml اصلی..."
@@ -35,7 +35,7 @@ workflows:
           echo "نصب وابستگی‌ها بر اساس فایل pubspec اصلی..."
           flutter pub get
 
-          echo "افزودن platform :ios, '14.0' به Podfile (برای رفع مشکل Google Maps)..."
+          echo "افزودن platform :ios, '14.0' به Podfile..."
           echo "platform :ios, '14.0'" >> ios/Podfile
 
           echo "اجرای pod install بر اساس پلاگین‌های واقعی پروژه..."
@@ -43,17 +43,30 @@ workflows:
           pod install
           cd ..
 
-          echo "پاکسازی تنظیمات امضای اپل..."
+          echo "پاکسازی کامل فایل‌های xcconfig از هرگونه تنظیمات امضا..."
+          sed -i '' 's/CODE_SIGN_IDENTITY=.*//g' ios/Flutter/Release.xcconfig || true
+          sed -i '' 's/CODE_SIGN_STYLE=.*//g' ios/Flutter/Release.xcconfig || true
+          sed -i '' 's/CODE_SIGN_IDENTITY=.*//g' ios/Flutter/Debug.xcconfig || true
+          sed -i '' 's/CODE_SIGN_STYLE=.*//g' ios/Flutter/Debug.xcconfig || true
+
+          echo "پاکسازی نهایی تنظیمات امضای اپل از فایل پروژه Xcode..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "شروع ساخت نهایی با Flutter build (غیرفعال‌سازی کامل امضا)..."
-          flutter build ios --release --no-codesign
+          echo "تنظیم مسیر دقیق فلاتر برای اجرای xcodebuild..."
+          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
+          export FLUTTER_ROOT
+
+          echo "شروع ساخت نهایی با xcodebuild (غیرفعال‌سازی ۱۰۰٪ امضا)..."
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          cd ..
 
           mkdir -p Payload
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            cp -r build/ios/iphoneos/Runner.app Payload/
+          if [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
+            cp -r build/ios/Release-iphoneos/Runner.app Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
