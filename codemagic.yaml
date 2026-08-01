@@ -16,28 +16,32 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (با xcodebuild و تنظیم مسیر فلاتر)
+      - name: ساخت IPA بدون امضا (با مسیر صحیح فلاتر)
         script: |
           set -e
-          echo "شروع ساخت با xcodebuild (غیرفعال‌سازی کامل امضا)..."
-          
-          # پیدا کردن مسیر دقیق فلاتر در سرور کدمایک
-          FLUTTER_ROOT=$(flutter --version --machine | grep -o '"flutterRoot":"[^"]*"' | cut -d '"' -f 4)
+          echo "شروع ساخت با xcodebuild و تنظیم مسیر فلاتر..."
+
+          # پیدا کردن مسیر دقیق فلاتر در سرور کدمایک با استفاده از دستور which
+          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
+          echo "FLUTTER_ROOT به صورت دستی تنظیم شد: $FLUTTER_ROOT"
           export FLUTTER_ROOT
-          echo "FLUTTER_ROOT تنظیم شد: $FLUTTER_ROOT"
-          
+
           cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
           cd ..
-          
+
           mkdir -p Payload
-          if [ ! -d "build/ios/Release-iphoneos/Runner.app" ]; then
-            echo "خطا: فایل Runner.app ساخته نشده است!"
+          if [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
+            cp -r build/ios/Release-iphoneos/Runner.app Payload/
+            zip -r unsigned_app.ipa Payload/
+            echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
+          elif [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cp -r build/ios/iphoneos/Runner.app Payload/
+            zip -r unsigned_app.ipa Payload/
+            echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
+          else
+            echo "خطا: فایل Runner.app در هیچ مسیری پیدا نشد!"
             exit 1
           fi
-          
-          cp -r build/ios/Release-iphoneos/Runner.app Payload/
-          zip -r unsigned_app.ipa Payload/
-          echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
     artifacts:
       - unsigned_app.ipa
