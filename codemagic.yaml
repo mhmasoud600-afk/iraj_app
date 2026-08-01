@@ -17,45 +17,76 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (روش تضمینی و نهایی)
+      - name: ساخت IPA بدون امضا (با Podfile سفارشی)
         script: |
           set -e
-          echo "ساخت پوشه ios تمیز از پروژه موقت..."
+          echo "حذف پوشه ios قدیمی..."
           rm -rf ios
+
+          echo "ساخت ios جدید با پروژه موقت و pubspec اصلی..."
           mkdir temp_project
           cp pubspec.yaml temp_project/
           cd temp_project
           flutter create --template=app .
           cd ..
-          rm -rf ios
           cp -R temp_project/ios .
           rm -rf temp_project
 
           echo "نصب وابستگی‌ها..."
           flutter pub get
-          echo "platform :ios, '14.0'" >> ios/Podfile
+
+          echo "بازنویسی Podfile با تنظیمات سفارشی (غیرفعال‌سازی کامل امضا)..."
+          cat > ios/Podfile <<EOF
+          platform :ios, '14.0'
+          ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+          project 'Runner', {
+            'Debug' => :debug,
+            'Profile' => :release,
+            'Release' => :release,
+          }
+          def flutter_root
+            generated_xcode_build_settings_path = File.expand_path(File.join(File.dirname(__FILE__), 'Flutter/Generated.xcconfig'))
+            unless File.exist?(generated_xcode_build_settings_path)
+              raise "\#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+            end
+            File.foreach(generated_xcode_build_settings_path) do |line|
+              matches = line.match(/FLUTTER_ROOT\=(.*)/)
+              return matches[1].strip if matches
+            end
+            raise "FLUTTER_ROOT not found in \#{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+          end
+          require File.expand_path(File.join(flutter_root, 'packages/flutter_tools/bin/podhelper'))
+          flutter_ios_podfile_setup
+          target 'Runner' do
+            use_frameworks!
+            use_modular_headers!
+            flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+          end
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              flutter_additional_ios_build_settings(target)
+              target.build_configurations.each do |config|
+                config.build_settings['CODE_SIGN_IDENTITY'] = ""
+                config.build_settings['CODE_SIGNING_REQUIRED'] = "NO"
+                config.build_settings['CODE_SIGNING_ALLOWED'] = "NO"
+                config.build_settings['DEVELOPMENT_TEAM'] = ""
+              end
+            end
+          end
+          EOF
+
+          echo "اجرای pod install..."
           cd ios
           pod install
           cd ..
 
-          echo "پاکسازی کامل تنظیمات امضای اپل..."
-          sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          echo "ساخت نهایی با Flutter build (غیرفعال‌سازی کامل امضا)..."
+          flutter build ios --release --no-codesign
 
-          echo "شروع ساخت با xcodebuild (دور زدن کامل فلاتر)..."
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-          cd ..
-
-          echo "تبدیل فایل کامپایل شده به IPA..."
+          echo "تبدیل فایل کامپایل‌شده به IPA..."
           mkdir -p Payload
-          APP_PATH="build/ios/Release-iphoneos/Runner.app"
-          if [ -d "$APP_PATH" ]; then
-            cp -r "$APP_PATH" Payload/
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cp -r build/ios/iphoneos/Runner.app Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
