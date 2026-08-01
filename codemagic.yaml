@@ -16,31 +16,33 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (رفع کامل مسیر فلاتر و پاکسازی امضاها)
+      - name: ساخت IPA بدون امضا (پاکسازی و بازسازی کامل ios)
         script: |
           set -e
+          echo "حذف پوشه ios قدیمی که حاوی مسیرهای اشتباه است..."
+          rm -rf ios
+
+          echo "ساخت مجدد پوشه ios با تنظیمات استاندارد macOS..."
+          flutter create --template=app .
+
+          echo "تنظیم نسخه iOS در Podfile..."
+          echo "platform :ios, '14.0'" >> ios/Podfile
+
           echo "نصب وابستگی‌ها..."
           flutter pub get
 
-          echo "استخراج مسیر واقعی فلاتر در سرور مک..."
-          # این دستور مسیر دقیق فلاتر را از طریق json خروجی flutter استخراج می‌کند
-          FLUTTER_ROOT=$(flutter --version --machine | grep -o '"flutterRoot":"[^"]*"' | cut -d '"' -f 4)
-          export FLUTTER_ROOT
-          echo "FLUTTER_ROOT تنظیم شد: $FLUTTER_ROOT"
-
-          echo "اجرای pod install با مسیر صحیح فلاتر..."
+          echo "اجرای pod install با مسیرهای پاک..."
           cd ios
           pod install
           cd ..
 
-          echo "پاکسازی مجدد تنظیمات امضا (پس از pod install)..."
+          echo "پاکسازی نهایی تنظیمات امضا..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "شروع ساخت نهایی با xcodebuild..."
+          echo "شروع ساخت نهایی با xcodebuild (غیرفعال‌سازی کامل امضا)..."
           cd ios
           xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           cd ..
@@ -50,12 +52,8 @@ workflows:
             cp -r build/ios/Release-iphoneos/Runner.app Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
-          elif [ -d "build/ios/iphoneos/Runner.app" ]; then
-            cp -r build/ios/iphoneos/Runner.app Payload/
-            zip -r unsigned_app.ipa Payload/
-            echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
-            echo "خطا: فایل Runner.app پیدا نشد!"
+            echo "خطا: فایل Runner.app ساخته نشد!"
             exit 1
           fi
     artifacts:
