@@ -17,13 +17,13 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با Podfile سفارشی)
+      - name: ساخت IPA بدون امضا (با xcodebuild و حذف xcconfig)
         script: |
           set -e
           echo "حذف پوشه ios قدیمی..."
           rm -rf ios
 
-          echo "ساخت ios جدید با پروژه موقت و pubspec اصلی..."
+          echo "ایجاد پوشه ios جدید از پروژه موقت..."
           mkdir temp_project
           cp pubspec.yaml temp_project/
           cd temp_project
@@ -35,58 +35,31 @@ workflows:
           echo "نصب وابستگی‌ها..."
           flutter pub get
 
-          echo "بازنویسی Podfile با تنظیمات سفارشی (غیرفعال‌سازی کامل امضا)..."
-          cat > ios/Podfile <<EOF
-          platform :ios, '14.0'
-          ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-          project 'Runner', {
-            'Debug' => :debug,
-            'Profile' => :release,
-            'Release' => :release,
-          }
-          def flutter_root
-            generated_xcode_build_settings_path = File.expand_path(File.join(File.dirname(__FILE__), 'Flutter/Generated.xcconfig'))
-            unless File.exist?(generated_xcode_build_settings_path)
-              raise "\#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
-            end
-            File.foreach(generated_xcode_build_settings_path) do |line|
-              matches = line.match(/FLUTTER_ROOT\=(.*)/)
-              return matches[1].strip if matches
-            end
-            raise "FLUTTER_ROOT not found in \#{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
-          end
-          require File.expand_path(File.join(flutter_root, 'packages/flutter_tools/bin/podhelper'))
-          flutter_ios_podfile_setup
-          target 'Runner' do
-            use_frameworks!
-            use_modular_headers!
-            flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-          end
-          post_install do |installer|
-            installer.pods_project.targets.each do |target|
-              flutter_additional_ios_build_settings(target)
-              target.build_configurations.each do |config|
-                config.build_settings['CODE_SIGN_IDENTITY'] = ""
-                config.build_settings['CODE_SIGNING_REQUIRED'] = "NO"
-                config.build_settings['CODE_SIGNING_ALLOWED'] = "NO"
-                config.build_settings['DEVELOPMENT_TEAM'] = ""
-              end
-            end
-          end
-          EOF
+          echo "افزودن platform :ios, '14.0' به Podfile..."
+          echo "platform :ios, '14.0'" >> ios/Podfile
 
           echo "اجرای pod install..."
           cd ios
           pod install
           cd ..
 
-          echo "ساخت نهایی با Flutter build (غیرفعال‌سازی کامل امضا)..."
-          flutter build ios --release --no-codesign
+          echo "حذف فایل‌های xcconfig (برای نادیده گرفتن تنظیمات امضای فلاتر)..."
+          rm -f ios/Flutter/Release.xcconfig
+          rm -f ios/Flutter/Debug.xcconfig
 
-          echo "تبدیل فایل کامپایل‌شده به IPA..."
+          echo "تنظیم مسیر فلاتر برای xcodebuild..."
+          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
+          export FLUTTER_ROOT
+
+          echo "شروع ساخت نهایی با xcodebuild (غیرفعال‌سازی ۱۰۰٪ امضا)..."
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          cd ..
+
+          echo "تبدیل فایل کامپایل شده به IPA..."
           mkdir -p Payload
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            cp -r build/ios/iphoneos/Runner.app Payload/
+          if [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
+            cp -r build/ios/Release-iphoneos/Runner.app Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
