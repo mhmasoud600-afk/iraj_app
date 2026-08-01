@@ -16,22 +16,26 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (پاکسازی و بازسازی کامل ios)
+      - name: ساخت IPA بدون امضا (با اصلاح نهایی pubspec.yaml)
         script: |
           set -e
-          echo "حذف پوشه ios قدیمی که حاوی مسیرهای اشتباه است..."
+          echo "حذف پوشه ios قدیمی..."
           rm -rf ios
 
-          echo "ساخت مجدد پوشه ios با تنظیمات استاندارد macOS..."
+          echo "ساخت مجدد پوشه ios با تنظیمات استاندارد..."
           flutter create --template=app .
 
-          echo "تنظیم نسخه iOS در Podfile..."
-          echo "platform :ios, '14.0'" >> ios/Podfile
+          echo "اضافه کردن بخش assets به pubspec.yaml (حل مشکل بسته‌بندی فایل‌ها)..."
+          # با استفاده از echo، بخش flutter و assets را به انتهای فایل اضافه می‌کنیم
+          echo -e "\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/" >> pubspec.yaml
 
           echo "نصب وابستگی‌ها..."
           flutter pub get
 
-          echo "اجرای pod install با مسیرهای پاک..."
+          echo "تنظیم نسخه iOS در Podfile..."
+          echo "platform :ios, '14.0'" >> ios/Podfile
+
+          echo "اجرای pod install..."
           cd ios
           pod install
           cd ..
