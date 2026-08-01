@@ -16,17 +16,30 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (با هک فایل پروژه Xcode)
+      - name: ساخت IPA بدون امضا (پاکسازی کامل امضاهای Xcode)
         script: |
           set -e
           echo "شروع ساخت با Flutter build..."
 
           flutter pub get
 
-          echo "حذف تنظیمات Development Team از فایل پروژه Xcode برای عبور از خطا..."
-          # حذف خطوط مربوط به Development Team از فایل project.pbxproj (دستور مخصوص سرورهای مک)
+          echo "پاکسازی کامل تنظیمات Code Signing از فایل پروژه Xcode..."
+          
+          # حذف تمام خطوط مرتبط با تیم توسعه‌دهنده و امضا در فایل پروژه
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/PROVISIONING_PROFILE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
+
+          echo "پاکسازی تنظیمات امضا از فایل‌های xcconfig..."
+          # حذف تنظیمات گواهی در فایل‌های تنظیمات فلاتر
+          sed -i '' 's/CODE_SIGN_IDENTITY=.*//g' ios/Flutter/Release.xcconfig || true
+          sed -i '' 's/CODE_SIGN_STYLE=.*//g' ios/Flutter/Release.xcconfig || true
+          sed -i '' 's/CODE_SIGN_IDENTITY=.*//g' ios/Flutter/Debug.xcconfig || true
+          sed -i '' 's/CODE_SIGN_STYLE=.*//g' ios/Flutter/Debug.xcconfig || true
 
           echo "اجرای Flutter build با غیرفعال‌سازی کامل امضا..."
           flutter build ios --release --no-codesign
