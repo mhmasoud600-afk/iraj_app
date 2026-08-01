@@ -16,13 +16,19 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (روش نهایی و تضمینی)
+      - name: ساخت IPA بدون امضا (رفع کامل مسیر فلاتر و پاکسازی امضاها)
         script: |
           set -e
-          echo "آماده‌سازی محیط و نصب وابستگی‌ها..."
+          echo "نصب وابستگی‌ها..."
           flutter pub get
 
-          echo "اجرای pod install برای نصب پلاگین‌ها (این دستور تنظیمات امضا را بازنویسی می‌کند)..."
+          echo "استخراج مسیر واقعی فلاتر در سرور مک..."
+          # این دستور مسیر دقیق فلاتر را از طریق json خروجی flutter استخراج می‌کند
+          FLUTTER_ROOT=$(flutter --version --machine | grep -o '"flutterRoot":"[^"]*"' | cut -d '"' -f 4)
+          export FLUTTER_ROOT
+          echo "FLUTTER_ROOT تنظیم شد: $FLUTTER_ROOT"
+
+          echo "اجرای pod install با مسیر صحیح فلاتر..."
           cd ios
           pod install
           cd ..
@@ -34,11 +40,7 @@ workflows:
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "تنظیم مسیر دقیق فلاتر برای xcodebuild..."
-          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
-          export FLUTTER_ROOT
-
-          echo "شروع ساخت نهایی با xcodebuild (غیرفعال‌سازی کامل امضا)..."
+          echo "شروع ساخت نهایی با xcodebuild..."
           cd ios
           xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           cd ..
@@ -53,7 +55,7 @@ workflows:
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
-            echo "خطا: فایل Runner.app در هیچ مسیری پیدا نشد!"
+            echo "خطا: فایل Runner.app پیدا نشد!"
             exit 1
           fi
     artifacts:
