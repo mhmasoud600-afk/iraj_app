@@ -16,31 +16,24 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (با مسیر صحیح فلاتر)
+      - name: ساخت IPA بدون امضا (با دستور رسمی Flutter)
         script: |
           set -e
-          echo "شروع ساخت با xcodebuild و تنظیم مسیر فلاتر..."
-
-          # پیدا کردن مسیر دقیق فلاتر در سرور کدمایک با استفاده از دستور which
-          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
-          echo "FLUTTER_ROOT به صورت دستی تنظیم شد: $FLUTTER_ROOT"
-          export FLUTTER_ROOT
-
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
-          cd ..
-
+          echo "شروع ساخت با Flutter build و غیرفعال‌سازی کامل امضا..."
+          
+          # این دستور باعث می‌شود فلاتر خودش ساختارها را بچیند
+          flutter pub get
+          
+          # استفاده از پرچم --release و --no-codesign به همراه یک ترفند برای رد کردن Development Team
+          flutter build ios --release --no-codesign
+          
           mkdir -p Payload
-          if [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
-            cp -r build/ios/Release-iphoneos/Runner.app Payload/
-            zip -r unsigned_app.ipa Payload/
-            echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
-          elif [ -d "build/ios/iphoneos/Runner.app" ]; then
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
             cp -r build/ios/iphoneos/Runner.app Payload/
             zip -r unsigned_app.ipa Payload/
             echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
           else
-            echo "خطا: فایل Runner.app در هیچ مسیری پیدا نشد!"
+            echo "خطا: فایل Runner.app پیدا نشد!"
             exit 1
           fi
     artifacts:
