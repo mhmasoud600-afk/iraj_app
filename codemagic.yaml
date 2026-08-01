@@ -16,25 +16,29 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (رفع خطای Duplicate key در pubspec.yaml)
+      - name: ساخت IPA بدون امضا (با کپی پوشه ios از پروژه موقت)
         script: |
           set -e
           echo "حذف پوشه ios قدیمی..."
           rm -rf ios
 
-          echo "ساخت مجدد پوشه ios با تنظیمات استاندارد..."
+          echo "ایجاد یک پروژه فلاتر موقت برای تولید پوشه ios تمیز..."
+          mkdir temp_project
+          cd temp_project
           flutter create --template=app .
+          cd ..
 
-          echo "اضافه کردن assets به بخش flutter موجود (بدون ایجاد تکراری)..."
-          # این دستور خط uses-material-design را پیدا کرده و assets را زیر آن اضافه می‌کند
-          awk '/uses-material-design: true/ { print; print "  assets:"; print "    - assets/"; next }1' pubspec.yaml > pubspec_new.yaml
-          mv pubspec_new.yaml pubspec.yaml
+          echo "کپی کردن پوشه ios تمیز از پروژه موقت به پروژه اصلی..."
+          cp -R temp_project/ios .
 
-          echo "نصب وابستگی‌ها..."
-          flutter pub get
+          echo "حذف پروژه موقت..."
+          rm -rf temp_project
 
           echo "تنظیم نسخه iOS در Podfile..."
           echo "platform :ios, '14.0'" >> ios/Podfile
+
+          echo "نصب وابستگی‌ها..."
+          flutter pub get
 
           echo "اجرای pod install..."
           cd ios
