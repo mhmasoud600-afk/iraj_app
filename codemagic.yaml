@@ -16,19 +16,18 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (روش تضمینی)
+      - name: ساخت IPA بدون امضا (با Flutter build)
         script: |
           set -e
-          echo "شروع ساخت با xcodebuild (غیرفعال‌سازی کامل امضا)..."
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
-          cd ..
+          echo "شروع ساخت با Flutter build (غیرفعال‌سازی کامل امضا)..."
+          flutter pub get
+          flutter build ios --release --no-codesign
           mkdir -p Payload
-          if [ ! -d "build/ios/Release-iphoneos/Runner.app" ]; then
+          if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
             echo "خطا: فایل Runner.app ساخته نشده است!"
             exit 1
           fi
-          cp -r build/ios/Release-iphoneos/Runner.app Payload/
+          cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r unsigned_app.ipa Payload/
           echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
     artifacts:
