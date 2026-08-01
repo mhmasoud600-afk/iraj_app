@@ -16,31 +16,28 @@ workflows:
           unzip -o assets.zip -d assets/
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
-      - name: ساخت IPA بدون امضا (با کپی پوشه ios از پروژه موقت)
+      - name: ساخت IPA بدون امضا (با بک‌آپ pubspec و تولید ios اصلی)
         script: |
           set -e
+          echo "بک‌آپ گرفتن از فایل pubspec.yaml اصلی..."
+          cp pubspec.yaml pubspec.yaml.bak
+
           echo "حذف پوشه ios قدیمی..."
           rm -rf ios
 
-          echo "ایجاد یک پروژه فلاتر موقت برای تولید پوشه ios تمیز..."
-          mkdir temp_project
-          cd temp_project
+          echo "ساخت مجدد پوشه ios با تنظیمات استاندارد (pubspec موقت)..."
           flutter create --template=app .
-          cd ..
 
-          echo "کپی کردن پوشه ios تمیز از پروژه موقت به پروژه اصلی..."
-          cp -R temp_project/ios .
+          echo "بازگرداندن فایل pubspec.yaml اصلی..."
+          mv pubspec.yaml.bak pubspec.yaml
 
-          echo "حذف پروژه موقت..."
-          rm -rf temp_project
+          echo "نصب وابستگی‌های واقعی بر اساس pubspec اصلی..."
+          flutter pub get
 
           echo "تنظیم نسخه iOS در Podfile..."
           echo "platform :ios, '14.0'" >> ios/Podfile
 
-          echo "نصب وابستگی‌ها..."
-          flutter pub get
-
-          echo "اجرای pod install..."
+          echo "اجرای pod install با وابستگی‌های واقعی..."
           cd ios
           pod install
           cd ..
