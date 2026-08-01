@@ -17,37 +17,35 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با اصلاح نسخه iOS در Podfile)
+      - name: ساخت IPA بدون امضا (با بازسازی ios از pubspec اصلی)
         script: |
           set -e
-          echo "حذف پوشه ios قدیمی..."
+          echo "بک‌آپ گرفتن از فایل pubspec.yaml اصلی (با بخش assets و flutter)..."
+          cp pubspec.yaml pubspec.yaml.bak
+
+          echo "حذف پوشه ios قدیمی و خراب..."
           rm -rf ios
 
-          echo "ساخت پوشه ios تمیز از پروژه موقت..."
-          mkdir temp_project
-          cd temp_project
+          echo "ساخت مجدد پوشه ios بر اساس pubspec.yaml فعلی..."
           flutter create --template=app .
-          cd ..
-          cp -R temp_project/ios .
-          rm -rf temp_project
 
-          echo "اضافه کردن platform :ios, '14.0' به Podfile (رفع مشکل google_maps)..."
-          echo "platform :ios, '14.0'" >> ios/Podfile
+          echo "بازگرداندن فایل pubspec.yaml اصلی (برای حفظ تنظیمات assets)..."
+          mv pubspec.yaml.bak pubspec.yaml
 
-          echo "نصب وابستگی‌ها بر اساس pubspec اصلی..."
+          echo "نصب وابستگی‌ها بر اساس فایل pubspec اصلی..."
           flutter pub get
 
-          echo "اجرای pod install با نسخه iOS اصلاح‌شده..."
+          echo "اجرای pod install بر اساس پلاگین‌های واقعی پروژه..."
           cd ios
           pod install
           cd ..
 
-          echo "پاکسازی تنظیمات امضای اپل..."
+          echo "پاکسازی نهایی تنظیمات امضای اپل..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "شروع ساخت نهایی با Flutter build..."
+          echo "شروع ساخت نهایی با Flutter build (غیرفعال‌سازی کامل امضا)..."
           flutter build ios --release --no-codesign
 
           mkdir -p Payload
