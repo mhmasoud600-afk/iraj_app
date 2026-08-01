@@ -17,13 +17,13 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با بازسازی ios از pubspec اصلی)
+      - name: ساخت IPA بدون امضا (با افزودن پلتفرم 14.0 به Podfile)
         script: |
           set -e
-          echo "بک‌آپ گرفتن از فایل pubspec.yaml اصلی (با بخش assets و flutter)..."
+          echo "بک‌آپ گرفتن از فایل pubspec.yaml اصلی..."
           cp pubspec.yaml pubspec.yaml.bak
 
-          echo "حذف پوشه ios قدیمی و خراب..."
+          echo "حذف پوشه ios قدیمی..."
           rm -rf ios
 
           echo "ساخت مجدد پوشه ios بر اساس pubspec.yaml فعلی..."
@@ -35,12 +35,15 @@ workflows:
           echo "نصب وابستگی‌ها بر اساس فایل pubspec اصلی..."
           flutter pub get
 
+          echo "افزودن platform :ios, '14.0' به Podfile (برای رفع مشکل Google Maps)..."
+          echo "platform :ios, '14.0'" >> ios/Podfile
+
           echo "اجرای pod install بر اساس پلاگین‌های واقعی پروژه..."
           cd ios
           pod install
           cd ..
 
-          echo "پاکسازی نهایی تنظیمات امضای اپل..."
+          echo "پاکسازی تنظیمات امضای اپل..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
