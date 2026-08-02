@@ -17,13 +17,11 @@ workflows:
           rm assets.zip
           echo "دانلود و استخراج فایل‌ها با موفقیت انجام شد!"
 
-      - name: ساخت IPA بدون امضا (با flutter build ios و تنظیم مسیر صحیح)
+      - name: ساخت IPA بدون امضا (روش طوفانی و تضمینی)
         script: |
           set -e
-          echo "حذف پوشه ios قدیمی..."
+          echo "حذف پوشه ios قدیمی و ساخت ios تمیز از پروژه موقت..."
           rm -rf ios
-
-          echo "ساخت پوشه ios جدید از پروژه موقت..."
           mkdir temp_project
           cp pubspec.yaml temp_project/
           cd temp_project
@@ -32,10 +30,8 @@ workflows:
           cp -R temp_project/ios .
           rm -rf temp_project
 
-          echo "نصب وابستگی‌ها بر اساس pubspec اصلی..."
+          echo "نصب وابستگی‌ها..."
           flutter pub get
-
-          echo "افزودن platform :ios, '14.0' به Podfile..."
           echo "platform :ios, '14.0'" >> ios/Podfile
 
           echo "اجرای pod install..."
@@ -43,28 +39,41 @@ workflows:
           pod install
           cd ..
 
-          echo "پاکسازی تنظیمات امضای اپل در فایل پروژه..."
+          echo "پاکسازی نهایی تنظیمات امضا..."
           sed -i '' 's/DevelopmentTeam = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/DEVELOPMENT_TEAM = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = .*;//g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGNING_REQUIRED = .*;//g' ios/Runner.xcodeproj/project.pbxproj
 
-          echo "تنظیم مسیر صحیح FLUTTER_ROOT برای جلوگیری از خطای xcode_backend..."
-          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
-          export FLUTTER_ROOT
-          echo "FLUTTER_ROOT تنظیم شد: $FLUTTER_ROOT"
+          echo "تلاش برای ساخت با فلاتر (در صورت خطا، خودمان نجاتش می‌دهیم)..."
+          flutter build ios --release --no-codesign || true
 
-          echo "شروع ساخت نهایی با flutter build ios (غیرفعال‌سازی کامل امضا)..."
-          flutter build ios --release --no-codesign
-
-          echo "تبدیل فایل کامپایل شده به IPA..."
-          mkdir -p Payload
+          echo "بررسی وجود فایل کامپایل شده..."
+          APP_PATH=""
           if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            cp -r build/ios/iphoneos/Runner.app Payload/
-            zip -r unsigned_app.ipa Payload/
-            echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد!"
+            APP_PATH="build/ios/iphoneos/Runner.app"
+            echo "فایل توسط فلاتر ساخته شد!"
+          elif [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
+            APP_PATH="build/ios/Release-iphoneos/Runner.app"
+            echo "فایل توسط xcodebuild ساخته شد!"
           else
-            echo "خطا: فایل Runner.app پیدا نشد!"
+            echo "فلاتر شکست خورد! ساخت اجباری با xcodebuild..."
+            FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
+            export FLUTTER_ROOT
+            cd ios
+            xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+            cd ..
+            APP_PATH="build/ios/Release-iphoneos/Runner.app"
+          fi
+
+          echo "تبدیل فایل کامپایل‌شده به IPA..."
+          mkdir -p Payload
+          if [ -d "$APP_PATH" ]; then
+            cp -r "$APP_PATH" Payload/
+            zip -r unsigned_app.ipa Payload/
+            echo "🎉 فایل unsigned_app.ipa با موفقیت ساخته شد و در Artifacts آماده است!"
+          else
+            echo "خطای بحرانی: فایل Runner.app در هیچ مسیری پیدا نشد!"
             exit 1
           fi
     artifacts:
